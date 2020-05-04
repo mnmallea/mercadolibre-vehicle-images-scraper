@@ -60,7 +60,7 @@ const scrapSearchPage = async (search, pagesLimit) => {
   console.log(`Downloaded ${pagesCount} pages from "${search}" search.`);
   console.log(`Results: ${successesCount} successes - ${failuresCount} failures.`);
 
-  return { pagesCount, failureCount: failuresCount, successCount: successesCount };
+  return { pagesCount, failuresCount, successesCount };
 }
 
 fs.promises.mkdir(saveDir, { recursive: true })
