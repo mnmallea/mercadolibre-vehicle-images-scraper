@@ -4,8 +4,8 @@ const fs = require('fs');
 const { join: joinPath } = require('path');
 
 // Change this parameters to customize scraper behavior
-const baseUrl = 'https://vehiculos.mercadolibre.com.ar/camiones';
-const search = ['iveco', 'scania', 'mercedes benz', 'ford cargo'];
+const baseUrl = 'https://www.shutterstock.com/search';
+const search = ['trucks+white+background'];
 const saveDir = joinPath(process.cwd(), 'downloads');
 const maxPages = 10;
 
@@ -28,9 +28,9 @@ const downloadImage = async url => {
 }
 
 const getNextPage = $ => {
-  const nextPageButton = $('.andes-pagination__button--current').next().children('a').get(0)
+  const nextPageButton = $('[data-automation=BottomNav_NextButton]').get(0);
   if (!nextPageButton) return;
-  return nextPageButton.attribs.href;
+  return `https://www.shutterstock.com${nextPageButton.attribs.href}`;
 };
 
 const countResultsByStatus = (results, status) => results.filter(r => r.status === status).length;
@@ -44,7 +44,7 @@ const scrapSearchPage = async (search, pagesLimit) => {
   while (nextPage) {
     const response = await axios.get(nextPage);
     const $ = cherio.load(response.data, { normalizeWhitespace: true });
-    const images = $('.images-viewer').children('.carousel').children('ul').children('li').children('a').children('img');
+    const images = $('.z_h_g').children('img');
 
     const urls = images.map((_, imageNode) => imageNode.attribs.src || imageNode.attribs['data-src']).toArray();
 
