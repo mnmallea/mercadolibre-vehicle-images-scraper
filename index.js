@@ -3,11 +3,11 @@ const axios = require('axios');
 const fs = require('fs');
 const { join: joinPath } = require('path');
 
+// Change this parameters to customize scraper behavior
 const baseUrl = 'https://vehiculos.mercadolibre.com.ar/camiones';
 const search = ['iveco', 'scania', 'mercedes benz', 'ford cargo'];
-
-
 const saveDir = joinPath(process.cwd(), 'downloads');
+const maxPages = 10;
 
 const downloadImage = async url => {
   const imageName = url.split('/').pop().replace('.jpg', '');
@@ -33,9 +33,13 @@ const getNextPage = $ => {
   return nextPageButton.attribs.href;
 };
 
-const scrapSearchPage = async (search, pagesLimit = 10) => {
+const countResultsByStatus = (results, status) => results.filter(r => r.status === status).length;
+
+const scrapSearchPage = async (search, pagesLimit) => {
   var nextPage = `${baseUrl}/${search}`;
   var pagesCount = 0;
+
+  const requests = [];
 
   while (nextPage) {
     const response = await axios.get(nextPage);
@@ -44,11 +48,21 @@ const scrapSearchPage = async (search, pagesLimit = 10) => {
 
     const urls = images.map((_, imageNode) => imageNode.attribs.src || imageNode.attribs['data-src']).toArray();
 
-    urls.forEach(downloadImage);
+    urls.forEach(url => requests.push(downloadImage(url)));
     pagesCount++;
     if (pagesCount >= pagesLimit) break;
     nextPage = getNextPage($);
   }
+
+  const results = await Promise.allSettled(requests);
+  const successesCount = countResultsByStatus(results, 'fulfilled');
+  const failuresCount = countResultsByStatus(results, 'rejected');
+  console.log(`Downloaded ${pagesCount} pages from "${search}" search.`);
+  console.log(`Results: ${successesCount} successes - ${failuresCount} failures.`);
+
+  return { pagesCount, failureCount: failuresCount, successCount: successesCount };
 }
 
-search.forEach(s => scrapSearchPage(s));
+fs.promises.mkdir(saveDir, { recursive: true })
+  .then(() => search.forEach(s => scrapSearchPage(s, maxPages)))
+  .catch(console.log);
